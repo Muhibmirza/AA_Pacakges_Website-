@@ -1,0 +1,5 @@
+.git
+.agents
+.codex
+storage/logs/*
+storage/rate_limits/*

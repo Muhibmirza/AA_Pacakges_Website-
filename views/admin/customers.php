@@ -1,0 +1,6 @@
+<section class="admin-card">
+    <div class="card-head"><h2>Customers</h2></div>
+    <table class="admin-table"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th class="num">Orders</th><th class="num">Total Spent</th><th>Status</th><th class="actions-col">Actions</th></tr></thead><tbody>
+    <?php foreach ($customers as $user): ?><tr><td><?= e($user['name']) ?></td><td><?= e($user['email']) ?></td><td><?= e($user['phone']) ?></td><td class="num"><?= (int)$user['order_count'] ?></td><td class="num"><?= money((float)$user['total_spent']) ?></td><td><span class="status-badge <?= $user['status'] === 'active' ? 'status-delivered' : 'status-cancelled' ?>"><?= e($user['status']) ?></span></td><td class="actions"><form method="post"><?= csrf_field() ?><input type="hidden" name="action" value="update_customer_status"><input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>"><select name="status"><option value="active" <?= $user['status'] === 'active' ? 'selected' : '' ?>>active</option><option value="blocked" <?= $user['status'] === 'blocked' ? 'selected' : '' ?>>blocked</option></select><button type="submit">Save</button></form></td></tr><?php endforeach; ?>
+    </tbody></table>
+</section>

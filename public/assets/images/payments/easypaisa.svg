@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140" height="48" viewBox="0 0 140 48" role="img" aria-label="Easypaisa">
+  <rect width="140" height="48" rx="8" fill="#fff"/>
+  <circle cx="24" cy="24" r="14" fill="#79BE20"/>
+  <path d="M17 25c7-10 12-9 20-5-7 0-12 4-17 11-1.4-1.6-2.4-3.5-3-6Z" fill="#fff"/>
+  <text x="44" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#75B843">easypaisa</text>
+</svg>

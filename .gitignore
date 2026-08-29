@@ -1,0 +1,10 @@
+/storage/logs/*
+/storage/rate_limits/*
+/uploads/*
+!/storage/logs/.gitkeep
+!/storage/rate_limits/.gitkeep
+!/uploads/.gitkeep
+.env
+.env.*
+!.env.example
+
