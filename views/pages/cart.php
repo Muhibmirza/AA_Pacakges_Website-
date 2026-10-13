@@ -29,7 +29,11 @@
             <h2>Order Summary</h2>
             <div class="summary-row"><span>Subtotal</span><strong><?= money($totals['subtotal']) ?></strong></div>
             <div class="summary-row"><span>Delivery</span><strong><?= money($totals['delivery']) ?></strong></div>
-            <div class="coupon-row"><input placeholder="Coupon code"><button class="btn btn-outline">Apply</button></div>
+            <?php if ($totals['discount'] > 0): ?><div class="summary-row"><span>Discount (<?= e($totals['coupon_code']) ?>)</span><strong>-<?= money($totals['discount']) ?></strong></div><?php endif; ?>
+            <form class="coupon-row" data-coupon-form>
+                <?= csrf_field() ?><input name="code" value="<?= e($totals['coupon_code']) ?>" placeholder="Coupon code" maxlength="60" required><button class="btn btn-outline" type="submit">Apply</button>
+            </form>
+            <div class="form-status" data-coupon-status aria-live="polite"></div>
             <div class="summary-row total"><span>Total</span><strong><?= money($totals['total']) ?></strong></div>
             <a class="btn btn-primary full" href="<?= route('checkout') ?>">Proceed to Checkout</a>
             <a class="text-link" href="<?= route('shop') ?>">Continue Shopping</a>

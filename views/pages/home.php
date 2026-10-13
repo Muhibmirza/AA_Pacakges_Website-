@@ -5,7 +5,7 @@
                 <span class="eyebrow"><?= e($banner['kicker'] ?? 'Wholesale Packaging') ?></span>
                 <h1><?= e($banner['heading']) ?></h1>
                 <p><?= e($banner['subtext']) ?></p>
-                <a class="btn btn-primary" href="<?= e($banner['button_link']) ?>"><?= e($banner['button_text']) ?></a>
+                <a class="btn btn-primary" href="<?= e(content_url($banner['button_link'])) ?>"><?= e($banner['button_text']) ?></a>
             </div>
         </article>
     <?php endforeach; ?>

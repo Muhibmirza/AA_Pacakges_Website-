@@ -24,7 +24,7 @@ class AdminController
             header('Location: ' . admin_route('dashboard'));
             exit;
         }
-        $error = '';
+        $error = !empty($_GET['timeout']) ? 'Your admin session expired after inactivity. Please sign in again.' : '';
         if (is_post()) {
             verify_csrf();
             enforce_rate_limit('auth', $_POST['email'] ?? '');
@@ -33,6 +33,7 @@ class AdminController
             } else {
                 $admin = (new Admin($this->db))->findForLogin(trim($_POST['email'] ?? ''));
                 if ($admin && password_verify($_POST['password'] ?? '', $admin['password_hash'])) {
+                    session_regenerate_id(true);
                     $_SESSION['admin_id'] = (int)$admin['id'];
                     $_SESSION['admin_name'] = $admin['name'];
                     $_SESSION['admin_last_seen'] = time();
@@ -52,7 +53,14 @@ class AdminController
     public function dispatch(string $page): void
     {
         if ($page === 'logout') {
+            admin_guard();
+            if (!is_post()) {
+                header('Location: ' . admin_route('dashboard'));
+                exit;
+            }
+            verify_csrf();
             unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_last_seen']);
+            session_regenerate_id(true);
             header('Location: ' . url('admin'));
             exit;
         }
@@ -79,6 +87,19 @@ class AdminController
                 break;
             case 'quotes':
                 $data = ['quotes' => $this->db->query('SELECT * FROM quote_requests ORDER BY created_at DESC')->fetchAll()];
+                break;
+            case 'leads':
+                if (($_GET['export'] ?? '') === 'csv') {
+                    $this->exportDiscountLeads();
+                }
+                $data = ['leads' => $this->discountLeads()];
+                break;
+            case 'contact-messages':
+                $data = ['messages' => $this->contactMessages()];
+                break;
+            case 'pages':
+                $stmt = $this->db->query("SELECT * FROM pages WHERE slug IN ('about', 'contact') ORDER BY FIELD(slug, 'about', 'contact')");
+                $data = ['managedPages' => $stmt->fetchAll()];
                 break;
             case 'customers':
                 $data = ['customers' => $this->db->query('SELECT u.*, COUNT(o.id) AS order_count, COALESCE(SUM(o.total),0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id GROUP BY u.id ORDER BY u.created_at DESC')->fetchAll()];
@@ -110,7 +131,7 @@ class AdminController
             default:
                 $data = $this->dashboardData();
         }
-        $view = in_array($page, ['products','categories','orders','quotes','customers','payments','coupons','reports','banners','settings','admins'], true) ? $page : 'dashboard';
+        $view = in_array($page, ['products','categories','orders','quotes','leads','contact-messages','pages','customers','payments','coupons','reports','banners','settings','admins'], true) ? $page : 'dashboard';
         $settings = $this->settings;
         extract($data);
         require ROOT_PATH . '/views/admin/layout.php';
@@ -160,6 +181,14 @@ class AdminController
                 case 'update_quote':
                     $stmt = $this->db->prepare('UPDATE quote_requests SET status = ?, internal_notes = ? WHERE id = ?');
                     $stmt->execute([$_POST['status'], $_POST['internal_notes'] ?? '', (int)$_POST['quote_id']]);
+                    break;
+                case 'update_contact_message':
+                    $status = in_array($_POST['status'] ?? '', ['new', 'read', 'replied', 'closed'], true) ? $_POST['status'] : 'new';
+                    $stmt = $this->db->prepare('UPDATE contact_messages SET status = ? WHERE id = ?');
+                    $stmt->execute([$status, (int)$_POST['message_id']]);
+                    break;
+                case 'save_page':
+                    $this->savePage();
                     break;
                 case 'update_customer_status':
                     $stmt = $this->db->prepare('UPDATE users SET status = ? WHERE id = ?');
@@ -218,6 +247,24 @@ class AdminController
         }
     }
 
+    private function savePage(): void
+    {
+        $slug = strtolower(trim((string)($_POST['slug'] ?? '')));
+        if (!in_array($slug, ['about', 'contact'], true)) {
+            throw new RuntimeException('This page cannot be edited here.');
+        }
+        $data = require_fields($_POST, [
+            'title' => ['required' => true, 'min' => 5, 'max' => 190, 'label' => 'Page heading'],
+            'content' => ['required' => true, 'min' => 10, 'max' => 10000, 'label' => 'Page content'],
+        ]);
+        $content = trim(strip_tags($data['content']));
+        $stmt = $this->db->prepare(
+            'INSERT INTO pages (slug, title, content) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE title = VALUES(title), content = VALUES(content), updated_at = CURRENT_TIMESTAMP'
+        );
+        $stmt->execute([$slug, trim($data['title']), $content]);
+    }
+
     private function createProduct(): void
     {
         $categoryId = (int)$_POST['category_id'];
@@ -265,6 +312,15 @@ class AdminController
         $slug = slugify($_POST['slug'] ?: $data['name']);
         $stmt = $this->db->prepare('UPDATE products SET category_id = ?, name = ?, slug = ?, short_description = ?, description = ?, default_variant = ?, base_price = ?, stock_quantity = ?, main_image = ?, is_featured = ?, is_active = ? WHERE id = ?');
         $stmt->execute([$categoryId, $data['name'], $slug, $data['short_description'], $data['description'], $data['default_variant'], (float)$data['base_price'], (int)$data['stock_quantity'], $image, !empty($_POST['is_featured']) ? 1 : 0, !empty($_POST['is_active']) ? 1 : 0, $id]);
+        $this->db->prepare('UPDATE product_images SET image_path = ? WHERE product_id = ? AND sort_order = 1')->execute([$image, $id]);
+        $variant = $this->db->prepare('SELECT id FROM product_variants WHERE product_id = ? ORDER BY id LIMIT 1');
+        $variant->execute([$id]);
+        $variantId = $variant->fetchColumn();
+        if ($variantId) {
+            $this->db->prepare('UPDATE product_variants SET size_label = ?, material = ?, price = ?, stock_quantity = ? WHERE id = ?')->execute([$data['default_variant'], $_POST['variant_material'] ?: $data['default_variant'], (float)$data['base_price'], (int)$data['stock_quantity'], (int)$variantId]);
+        } else {
+            $this->db->prepare('INSERT INTO product_variants (product_id, size_label, material, price, stock_quantity) VALUES (?, ?, ?, ?, ?)')->execute([$id, $data['default_variant'], $_POST['variant_material'] ?: $data['default_variant'], (float)$data['base_price'], (int)$data['stock_quantity']]);
+        }
     }
 
     private function createCategory(): void
@@ -327,7 +383,7 @@ class AdminController
 
     private function deleteRow(string $table, int $id): void
     {
-        $allowed = ['products', 'categories', 'banners', 'coupons', 'quote_requests'];
+        $allowed = ['products', 'categories', 'banners', 'coupons', 'quote_requests', 'discount_leads', 'contact_messages'];
         if (!in_array($table, $allowed, true) || $id <= 0) {
             throw new RuntimeException('Delete action is not allowed.');
         }
@@ -365,5 +421,60 @@ class AdminController
         $stmt = $this->db->prepare('SELECT c.*, cb.banner_image, cb.tagline, cb.cta_text, cb.cta_link FROM categories c LEFT JOIN category_banners cb ON cb.category_id = c.id WHERE c.id = ? LIMIT 1');
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
+    }
+
+    private function discountLeads(): array
+    {
+        $where = [];
+        $params = [];
+        $search = trim((string)($_GET['q'] ?? ''));
+        if ($search !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ? OR phone LIKE ?)';
+            $term = '%' . $search . '%';
+            array_push($params, $term, $term, $term);
+        }
+        if (!empty($_GET['date_from'])) {
+            $where[] = 'DATE(created_at) >= ?';
+            $params[] = $_GET['date_from'];
+        }
+        if (!empty($_GET['date_to'])) {
+            $where[] = 'DATE(created_at) <= ?';
+            $params[] = $_GET['date_to'];
+        }
+        $sql = 'SELECT * FROM discount_leads' . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY created_at DESC';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    private function contactMessages(): array
+    {
+        $where = [];
+        $params = [];
+        $search = trim((string)($_GET['q'] ?? ''));
+        if ($search !== '') {
+            $where[] = '(name LIKE ? OR email LIKE ? OR phone LIKE ? OR message LIKE ?)';
+            $term = '%' . $search . '%';
+            array_push($params, $term, $term, $term, $term);
+        }
+        $sql = 'SELECT * FROM contact_messages' . ($where ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY created_at DESC';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    private function exportDiscountLeads(): never
+    {
+        $rows = $this->discountLeads();
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="aa-packages-discount-leads-' . date('Y-m-d') . '.csv"');
+        $output = fopen('php://output', 'wb');
+        fwrite($output, "\xEF\xBB\xBF");
+        fputcsv($output, ['Name', 'Email', 'Phone', 'Source', 'Submitted', 'Last Updated']);
+        foreach ($rows as $row) {
+            fputcsv($output, [$row['name'], $row['email'], $row['phone'], $row['source'], $row['created_at'], $row['updated_at']]);
+        }
+        fclose($output);
+        exit;
     }
 }

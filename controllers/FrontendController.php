@@ -67,6 +67,23 @@ class FrontendController extends BaseController
         $this->render('static', ['page' => $page]);
     }
 
+    public function about(): void
+    {
+        $page = (new Content($this->db))->page('about') ?: [];
+        $stats = [
+            'products' => (int)$this->db->query('SELECT COUNT(*) FROM products WHERE is_active = 1')->fetchColumn(),
+            'categories' => (int)$this->db->query('SELECT COUNT(*) FROM categories WHERE is_active = 1')->fetchColumn(),
+            'orders' => (int)$this->db->query('SELECT COUNT(*) FROM orders')->fetchColumn(),
+        ];
+        $this->render('about', ['stats' => $stats, 'page' => $page]);
+    }
+
+    public function contact(): void
+    {
+        $page = (new Content($this->db))->page('contact') ?: [];
+        $this->render('contact', ['page' => $page]);
+    }
+
     public function track(): void
     {
         $order = null;

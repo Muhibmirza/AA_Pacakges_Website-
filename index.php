@@ -10,9 +10,18 @@ require_once __DIR__ . '/controllers/CartController.php';
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/CheckoutController.php';
 require_once __DIR__ . '/controllers/QuoteController.php';
+require_once __DIR__ . '/controllers/MarketingController.php';
 
 $settings = (new Setting($pdo))->all();
 $page = current_page();
+
+if (in_array($page, ['discount-lead', 'contact-submit'], true)) {
+    apply_cors();
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'OPTIONS') {
+        http_response_code(204);
+        exit;
+    }
+}
 
 switch ($page) {
     case 'shop':
@@ -32,6 +41,9 @@ switch ($page) {
         break;
     case 'cart-drawer':
         (new CartController($pdo, $settings))->drawer();
+        break;
+    case 'cart-coupon':
+        (new CartController($pdo, $settings))->applyCoupon();
         break;
     case 'checkout':
         (new CheckoutController($pdo, $settings))->checkout();
@@ -58,7 +70,17 @@ switch ($page) {
         (new FrontendController($pdo, $settings))->track();
         break;
     case 'about':
+        (new FrontendController($pdo, $settings))->about();
+        break;
     case 'contact':
+        (new FrontendController($pdo, $settings))->contact();
+        break;
+    case 'discount-lead':
+        (new MarketingController($pdo, $settings))->discountLead();
+        break;
+    case 'contact-submit':
+        (new MarketingController($pdo, $settings))->contactMessage();
+        break;
     case 'faqs':
     case 'terms':
     case 'privacy':

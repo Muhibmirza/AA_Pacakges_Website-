@@ -1,5 +1,7 @@
 /storage/logs/*
 /storage/rate_limits/*
+/storage/*.log
+/storage/npm-cache/
 /uploads/*
 !/storage/logs/.gitkeep
 !/storage/rate_limits/.gitkeep

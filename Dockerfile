@@ -13,4 +13,4 @@ ENV AA_BASE_URL=""
 EXPOSE 80
 
 ENTRYPOINT ["aapackages-entrypoint"]
-CMD ["php", "-S", "0.0.0.0:80", "-t", "/var/www/html", "/var/www/html/deploy/router.php"]
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-80} -t /var/www/html /var/www/html/deploy/router.php"]

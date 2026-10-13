@@ -1,23 +1,28 @@
 <?php
 declare(strict_types=1);
 
-$host = getenv('MYSQLHOST') ?: '127.0.0.1';
-$port = getenv('MYSQLPORT') ?: '3306';
-$database = getenv('MYSQLDATABASE') ?: 'aapackages';
-$username = getenv('MYSQLUSER') ?: 'root';
-$password = getenv('MYSQLPASSWORD') ?: '';
+$host = getenv('AA_DB_HOST') ?: getenv('MYSQLHOST') ?: '127.0.0.1';
+$port = getenv('AA_DB_PORT') ?: getenv('MYSQLPORT') ?: '3306';
+$database = getenv('AA_DB_NAME') ?: getenv('MYSQLDATABASE') ?: 'aapackages';
+$username = getenv('AA_DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
+$password = getenv('AA_DB_PASS') ?: getenv('MYSQLPASSWORD') ?: '';
 
 $pdo = null;
 for ($attempt = 1; $attempt <= 30; $attempt++) {
     try {
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_EMULATE_PREPARES => true,
+        ];
+        $sslCa = getenv('AA_DB_SSL_CA');
+        if ($sslCa && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+        }
         $pdo = new PDO(
             "mysql:host={$host};port={$port};dbname={$database};charset=utf8mb4",
             $username,
             $password,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_EMULATE_PREPARES => true,
-            ]
+            $options
         );
         break;
     } catch (PDOException $exception) {

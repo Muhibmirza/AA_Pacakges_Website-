@@ -18,6 +18,7 @@ class AuthController extends BaseController
             } else {
                 $user = (new User($this->db))->findForLogin($loginValue);
                 if ($user && $user['status'] === 'active' && password_verify($_POST['password'] ?? '', $user['password_hash'])) {
+                    session_regenerate_id(true);
                     $_SESSION['user_id'] = (int)$user['id'];
                     $_SESSION['user_name'] = $user['name'];
                     clear_attempts('customer_login');
@@ -46,6 +47,7 @@ class AuthController extends BaseController
                     'address' => ['required' => false, 'max' => 600, 'label' => 'Address'],
                 ]);
                 $userId = (new User($this->db))->create($data);
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $userId;
                 $_SESSION['user_name'] = $data['name'];
                 clear_rate_limit('auth', $data['email']);
@@ -60,6 +62,7 @@ class AuthController extends BaseController
     public function logout(): never
     {
         unset($_SESSION['user_id'], $_SESSION['user_name']);
+        session_regenerate_id(true);
         redirect('index.php');
     }
 

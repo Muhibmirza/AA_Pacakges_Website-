@@ -3,6 +3,7 @@
   const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || window.AA_PACKAGES?.csrf || '';
   const baseUrl = window.AA_PACKAGES?.baseUrl || '/aapackages/';
+  const apiBaseUrl = window.AA_PACKAGES?.apiBaseUrl || baseUrl;
   const money = (value) => 'Rs. ' + Math.round(Number(value || 0)).toLocaleString();
 
   qsa('[data-nav-toggle]').forEach((btn) => btn.addEventListener('click', () => qs('[data-nav]')?.classList.toggle('is-open')));
@@ -103,6 +104,29 @@
     });
   });
 
+  const adminLogoutModal = qs('[data-admin-logout-modal]');
+  const closeAdminLogout = () => {
+    if (!adminLogoutModal) return;
+    if (typeof adminLogoutModal.close === 'function' && adminLogoutModal.open) adminLogoutModal.close();
+    else adminLogoutModal.removeAttribute('open');
+    document.body.classList.remove('modal-open');
+  };
+  qs('[data-admin-logout-open]')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    if (!adminLogoutModal) return;
+    const scrollPosition = { left: window.scrollX, top: window.scrollY };
+    if (typeof adminLogoutModal.showModal === 'function') adminLogoutModal.showModal();
+    else adminLogoutModal.setAttribute('open', '');
+    document.body.classList.add('modal-open');
+    qs('[data-admin-logout-cancel]', adminLogoutModal)?.focus({ preventScroll: true });
+    window.scrollTo({ ...scrollPosition, behavior: 'instant' });
+  });
+  qs('[data-admin-logout-cancel]')?.addEventListener('click', closeAdminLogout);
+  adminLogoutModal?.addEventListener('click', (event) => {
+    if (event.target !== adminLogoutModal) return;
+    closeAdminLogout();
+  });
+
   const renderCart = (data) => {
     const body = qs('[data-cart-items]');
     if (!body || !data.cart) return;
@@ -130,11 +154,22 @@
     qsa('[data-cart-subtotal]').forEach((el) => { el.textContent = money(data.totals?.subtotal || 0); });
   };
 
-  const postForm = async (page, form) => {
+  const postForm = async (page, form, rootUrl = baseUrl) => {
     const fd = new FormData(form);
     if (!fd.get('csrf_token')) fd.append('csrf_token', csrf);
-    const res = await fetch(`${baseUrl}${page}`, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-    return res.json();
+    const res = await fetch(`${rootUrl}${page}`, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+    let data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      data = { ok: false, message: res.status === 419 ? 'Your form session expired. Refresh the page and try again.' : 'Something went wrong. Please try again.' };
+    }
+    if (res.status === 401 && data.login_url) {
+      window.location.assign(data.login_url);
+      return data;
+    }
+    if (!res.ok && !data.message) data.message = 'Something went wrong. Please try again.';
+    return data;
   };
   const fetchCart = async () => {
     const res = await fetch(`${baseUrl}cart-drawer`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -178,7 +213,7 @@
       location.reload();
     }
   });
-  fetchCart();
+  if (qs('[data-mini-cart]')) fetchCart();
 
   qsa('[data-thumb]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -195,6 +230,120 @@
       box.innerHTML = '';
       box.appendChild(img);
     });
+  });
+
+  const storageGet = (key) => {
+    try { return localStorage.getItem(key); } catch (_) { return null; }
+  };
+  const storageSet = (key, value) => {
+    try { localStorage.setItem(key, value); } catch (_) { /* Storage can be unavailable in private contexts. */ }
+  };
+  const discountModal = qs('[data-discount-modal]');
+  const discountReopen = qs('[data-discount-reopen]');
+  const discountForm = qs('[data-discount-form]');
+  const discountStatus = qs('[data-discount-status]');
+  const discountSuccess = qs('[data-discount-success]');
+  const discountSubmitted = storageGet('aa_discount_submitted') === '1';
+
+  const openDiscount = (automatic = false) => {
+    if (!discountModal || discountSubmitted) return;
+    discountModal.hidden = false;
+    document.body.classList.add('modal-open');
+    if (automatic) storageSet('aa_discount_seen', '1');
+    qs('input[name="email"]', discountModal)?.focus();
+  };
+  const closeDiscount = () => {
+    if (!discountModal) return;
+    discountModal.hidden = true;
+    document.body.classList.remove('modal-open');
+    if (storageGet('aa_discount_submitted') !== '1' && discountReopen) discountReopen.hidden = false;
+  };
+
+  if (discountModal) {
+    if (!discountSubmitted && storageGet('aa_discount_seen') !== '1') {
+      openDiscount(true);
+    } else if (!discountSubmitted && discountReopen) {
+      discountReopen.hidden = false;
+    }
+    qs('[data-discount-close]')?.addEventListener('click', closeDiscount);
+    discountReopen?.addEventListener('click', () => openDiscount(false));
+    discountModal.addEventListener('click', (event) => {
+      if (event.target === discountModal) closeDiscount();
+    });
+  }
+
+  discountForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!discountForm.checkValidity()) {
+      discountForm.reportValidity();
+      return;
+    }
+    const button = qs('button[type="submit"]', discountForm);
+    if (button) { button.disabled = true; button.textContent = 'Saving...'; }
+    if (discountStatus) { discountStatus.textContent = ''; discountStatus.className = 'form-status'; }
+    try {
+      const data = await postForm('discount-lead', discountForm, apiBaseUrl);
+      if (!data.ok) throw new Error(data.message || 'Could not save your details.');
+      storageSet('aa_discount_submitted', '1');
+      if (discountReopen) discountReopen.hidden = true;
+      discountForm.hidden = true;
+      if (discountSuccess) discountSuccess.hidden = false;
+      const successMessage = qs('[data-discount-success-message]');
+      if (successMessage) successMessage.textContent = data.message;
+      setTimeout(closeDiscount, 2200);
+    } catch (error) {
+      if (discountStatus) { discountStatus.textContent = error.message; discountStatus.classList.add('is-error'); }
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Get My 5% Discount'; }
+    }
+  });
+
+  const contactForm = qs('[data-contact-form]');
+  contactForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!contactForm.checkValidity()) {
+      contactForm.reportValidity();
+      return;
+    }
+    const button = qs('button[type="submit"]', contactForm);
+    const status = qs('[data-contact-status]', contactForm);
+    if (button) { button.disabled = true; button.textContent = 'Sending...'; }
+    if (status) { status.textContent = ''; status.className = 'form-status'; }
+    try {
+      const data = await postForm('contact-submit', contactForm, apiBaseUrl);
+      if (!data.ok) throw new Error(data.message || 'Could not send your message.');
+      if (status) { status.textContent = data.message; status.classList.add('is-success'); }
+      contactForm.reset();
+    } catch (error) {
+      if (status) { status.textContent = error.message; status.classList.add('is-error'); }
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Send Message'; }
+    }
+  });
+
+  const couponForm = qs('[data-coupon-form]');
+  couponForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!couponForm.checkValidity()) { couponForm.reportValidity(); return; }
+    const button = qs('button[type="submit"]', couponForm);
+    const status = qs('[data-coupon-status]');
+    if (button) { button.disabled = true; button.textContent = 'Applying...'; }
+    try {
+      const data = await postForm('cart-coupon', couponForm);
+      if (!data.ok) throw new Error(data.message || 'Coupon could not be applied.');
+      if (status) { status.textContent = data.message; status.className = 'form-status is-success'; }
+      window.location.reload();
+    } catch (error) {
+      if (status) { status.textContent = error.message; status.className = 'form-status is-error'; }
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Apply'; }
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    if (discountModal && !discountModal.hidden) closeDiscount();
+    if (adminLogoutModal?.open) closeAdminLogout();
   });
   function escapeHtml(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));

@@ -20,6 +20,17 @@ dashboard, and configurable payment methods.
 - Admin: `admin@aapackages.local` / `admin123`
 - Customer: `buyer@example.com` / `customer123`
 
+Change both passwords immediately after the client demo. The default admin is sample data, not a production credential.
+
+## New Storefront Features
+
+- The first-order popup stores subscribers in `discount_leads` and issues the working `WELCOME5` coupon.
+- WhatsApp uses `AA_WHATSAPP_NUMBER` from the environment (digits only, including country code).
+- Contact Us submissions are stored in `contact_messages`.
+- Admin pages `/admin/leads` and `/admin/contact-messages` provide management, deletion, search, and lead CSV export.
+- Admin page `/admin/pages` controls the public About and Contact page headings and introductory content; contact details remain under Settings.
+- Admin sessions use a rolling 8-hour lifetime by default. Change it with `AA_SESSION_TIMEOUT`.
+
 ## Payment Configuration
 
 Payment gateway configuration lives in `includes/payment-config.php` and reads live secrets from environment variables.
@@ -53,6 +64,39 @@ The current implementation records sandbox transactions and keeps the code modul
 - Uploads validate MIME type and image content, use random filenames, and `uploads/.htaccess` blocks executable files.
 - Database credentials can be configured with `AA_DB_HOST`, `AA_DB_NAME`, `AA_DB_USER`, and `AA_DB_PASS`.
 - There are no Composer/npm dependencies in this project, so no dependency advisory audit is required until packages are added.
+
+## Free Client Demo Deployment
+
+Recommended demo stack: a Render free Docker web service plus an Aiven free MySQL service. This keeps the existing PHP/MySQL application intact; Vercel and Netlify cannot run this PHP backend directly.
+
+### 1. Create the free MySQL database
+
+1. Create an Aiven account and a free MySQL service.
+2. In Aiven, copy the host, port, database name, username, and password from the service connection page.
+3. Keep SSL required. The included Render configuration uses `/etc/ssl/certs/ca-certificates.crt` as `AA_DB_SSL_CA`.
+4. You do not need to import the SQL manually for a fresh database. The container entrypoint imports `database/aapackages.sql` when the `settings` table does not exist.
+
+### 2. Deploy the PHP app on Render
+
+1. Push this project to a private GitHub repository. Do not commit `.env` or any live payment secrets.
+2. In Render choose **New > Blueprint** and select the repository. Render reads `render.yaml` and builds the included `Dockerfile`.
+3. Enter these secret environment values when prompted: `AA_DB_HOST`, `AA_DB_PORT`, `AA_DB_NAME`, `AA_DB_USER`, and `AA_DB_PASS`.
+4. Set `AA_ALLOWED_ORIGINS` to the final Render URL, for example `https://aa-packages-demo.onrender.com`.
+5. Set `AA_WHATSAPP_NUMBER` to the final WhatsApp number in international digits-only form.
+6. Deploy. Open `/health.php`; it should return `{"ok":true,"service":"aa-packages"}`.
+7. Open `/admin` and sign in with `admin@aapackages.local` / `admin123`, then change the seeded credential before any real use.
+
+Render free web services sleep after inactivity and their local filesystem is ephemeral. The stock assets are part of the deployed image, but images uploaded later through admin can disappear after a restart or redeploy. For a client demo this is acceptable; for production, set `AA_UPLOAD_PATH`/`AA_UPLOAD_URL` to persistent storage and use a paid service or object-storage adapter.
+
+Aiven's free MySQL tier is intended for demos and small workloads. It currently provides 1 GB storage on a single node and may pause after extended inactivity. Upgrade both services before accepting production traffic or payments.
+
+### 3. Existing database upgrade
+
+For an existing local or hosted database, import `database/migrations/2026_10_13_marketing_catalog.sql` once. It is idempotent and adds the lead/contact tables, requested categories/products, images, variants, and `WELCOME5` coupon without deleting existing records.
+
+### 4. Environment and CORS
+
+Copy `.env.example` values into your hosting dashboard; PHP does not load `.env` automatically. `AA_API_BASE_URL` defaults to the same origin as the website. CORS is denied by default and only origins listed in comma-separated `AA_ALLOWED_ORIGINS` receive cross-origin credentials headers.
 
 ## Asset Notes
 

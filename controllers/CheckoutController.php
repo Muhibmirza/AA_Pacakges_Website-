@@ -32,8 +32,9 @@ class CheckoutController extends BaseController
                 if (!in_array($method, $allowedMethods, true)) {
                     throw new InvalidArgumentException('Invalid payment method.');
                 }
-                $orderId = (new Order($this->db))->create($data, $cartController->cart(), $method, $_SESSION['user_id'] ?? null);
+                $orderId = (new Order($this->db))->create($data, $cartController->cart(), $method, $_SESSION['user_id'] ?? null, $cartController->totals());
                 $_SESSION['cart'] = [];
+                unset($_SESSION['coupon']);
                 redirect(route('confirmation', ['id' => $orderId]));
             } catch (Throwable $e) {
                 $error = $e instanceof InvalidArgumentException ? $e->getMessage() : 'We could not place the order. Please review your details and try again.';

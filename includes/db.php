@@ -11,15 +11,20 @@ $dbUser = getenv('AA_DB_USER') ?: getenv('MYSQLUSER') ?: 'root';
 $dbPass = getenv('AA_DB_PASS') ?: getenv('MYSQLPASSWORD') ?: '';
 
 try {
+    $pdoOptions = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
+    $sslCa = getenv('AA_DB_SSL_CA');
+    if ($sslCa && defined('PDO::MYSQL_ATTR_SSL_CA')) {
+        $pdoOptions[PDO::MYSQL_ATTR_SSL_CA] = $sslCa;
+    }
     $pdo = new PDO(
         "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
         $dbUser,
         $dbPass,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]
+        $pdoOptions
     );
 } catch (PDOException $e) {
     http_response_code(500);

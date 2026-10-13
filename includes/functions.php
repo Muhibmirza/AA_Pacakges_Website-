@@ -41,6 +41,9 @@ function route(string $name = 'home', array $params = []): string
         case 'cart-add':
         case 'cart-update':
         case 'cart-drawer':
+        case 'cart-coupon':
+        case 'discount-lead':
+        case 'contact-submit':
             $path = $name;
             break;
         default:
@@ -60,13 +63,31 @@ function asset(string $path): string
     return url('public/' . ltrim($path, '/'));
 }
 
+function content_url(string $path): string
+{
+    $path = trim($path);
+    if ($path === '' || $path[0] === '#' || preg_match('#^(https?:)?//#i', $path)) {
+        return $path ?: '#';
+    }
+    if (strpos($path, '/aapackages/') === 0) {
+        $path = substr($path, strlen('/aapackages/'));
+    }
+    return url(ltrim($path, '/'));
+}
+
 function uploaded(string $path): string
 {
     if ($path === '') {
         return asset('assets/images/categories/custom-printed-boxes.png');
     }
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
     if (strpos($path, 'public/') === 0 || strpos($path, 'uploads/') === 0) {
         return url($path);
+    }
+    if (UPLOAD_URL !== 'uploads' && strpos($path, UPLOAD_URL . '/') === 0) {
+        return rtrim(UPLOAD_URL, '/') . '/' . ltrim(substr($path, strlen(UPLOAD_URL)), '/');
     }
     return url(ltrim($path, '/'));
 }
@@ -74,6 +95,15 @@ function uploaded(string $path): string
 function e(?string $value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+}
+
+function page_text(?string $value): string
+{
+    $value = preg_replace('#<(br\s*/?|/p|/li|/h[1-6])>#i', "\n", (string)$value) ?? '';
+    $value = html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $value = preg_replace("/[ \t]+/", ' ', $value) ?? $value;
+    $value = preg_replace("/\n{3,}/", "\n\n", $value) ?? $value;
+    return trim($value);
 }
 
 function money(float $amount): string
@@ -203,7 +233,7 @@ function upload_image(string $field, string $folder): ?string
     if (!move_uploaded_file($tmp, $target)) {
         throw new RuntimeException('Could not save upload.');
     }
-    return 'uploads/' . trim($folder, '/') . '/' . $name;
+    return trim(UPLOAD_URL, '/') . '/' . trim($folder, '/') . '/' . $name;
 }
 
 function safe_content(string $html): string

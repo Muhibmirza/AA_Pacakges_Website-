@@ -47,6 +47,9 @@ class CartController extends BaseController
         if (isset($_SESSION['cart'][$id])) {
             if ($qty === 0) {
                 unset($_SESSION['cart'][$id]);
+                if (!$this->cart()) {
+                    unset($_SESSION['coupon']);
+                }
             } else {
                 $_SESSION['cart'][$id]['qty'] = $qty;
             }
@@ -57,6 +60,32 @@ class CartController extends BaseController
     public function drawer(): void
     {
         $this->json(['ok' => true, 'cart' => $this->cart(), 'totals' => $this->totals(), 'count' => $this->count()]);
+    }
+
+    public function applyCoupon(): void
+    {
+        verify_csrf();
+        enforce_rate_limit('public', 'coupon');
+        try {
+            $data = require_fields($_POST, [
+                'code' => ['required' => true, 'min' => 3, 'max' => 60, 'pattern' => '/^[A-Za-z0-9_-]+$/', 'label' => 'Coupon code'],
+            ]);
+            $stmt = $this->db->prepare('SELECT * FROM coupons WHERE code = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at >= CURDATE()) AND (usage_limit = 0 OR used_count < usage_limit) LIMIT 1');
+            $stmt->execute([strtoupper($data['code'])]);
+            $coupon = $stmt->fetch();
+            if (!$coupon) {
+                $this->json(['ok' => false, 'message' => 'This coupon is invalid, expired, or has reached its usage limit.'], 422);
+            }
+            $_SESSION['coupon'] = [
+                'id' => (int)$coupon['id'],
+                'code' => $coupon['code'],
+                'discount_type' => $coupon['discount_type'],
+                'discount_value' => (float)$coupon['discount_value'],
+            ];
+            $this->json(['ok' => true, 'message' => $coupon['code'] . ' applied successfully.', 'coupon' => $_SESSION['coupon'], 'totals' => $this->totals()]);
+        } catch (InvalidArgumentException $exception) {
+            $this->json(['ok' => false, 'message' => $exception->getMessage()], 422);
+        }
     }
 
     public function cart(): array
@@ -71,7 +100,21 @@ class CartController extends BaseController
             $subtotal += (float)$item['price'] * (int)$item['qty'];
         }
         $delivery = $subtotal > 0 && $subtotal < 25000 ? 350 : 0;
-        return ['subtotal' => $subtotal, 'delivery' => $delivery, 'discount' => 0, 'total' => $subtotal + $delivery];
+        $discount = 0.0;
+        $coupon = $_SESSION['coupon'] ?? null;
+        if ($coupon && $subtotal > 0) {
+            $discount = $coupon['discount_type'] === 'percentage'
+                ? $subtotal * min(100, (float)$coupon['discount_value']) / 100
+                : min($subtotal, (float)$coupon['discount_value']);
+        }
+        return [
+            'subtotal' => $subtotal,
+            'delivery' => $delivery,
+            'discount' => round($discount, 2),
+            'total' => max(0, $subtotal + $delivery - $discount),
+            'coupon_id' => $coupon['id'] ?? null,
+            'coupon_code' => $coupon['code'] ?? '',
+        ];
     }
 
     public function count(): int

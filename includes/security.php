@@ -4,8 +4,35 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_name('aa_packages_session');
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $isAdminRequest = preg_match('#/admin(?:/|$)#', $requestPath) === 1;
+    session_name($isAdminRequest ? 'aa_packages_admin_session' : 'aa_packages_session');
+    $secureCookie = filter_var(getenv('AA_SESSION_SECURE') ?: (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), FILTER_VALIDATE_BOOL);
+    session_set_cookie_params([
+        'lifetime' => SESSION_TIMEOUT,
+        'path' => rtrim(BASE_URL, '/') . '/',
+        'secure' => $secureCookie,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
+}
+
+function is_ajax_request(): bool
+{
+    return strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest';
+}
+
+function apply_cors(): void
+{
+    $origin = trim($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($origin !== '' && in_array($origin, ALLOWED_ORIGINS, true)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+        header('Vary: Origin');
+        header('Access-Control-Allow-Credentials: true');
+        header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, X-CSRF-Token');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+    }
 }
 
 function csrf_token(): string
@@ -102,11 +129,23 @@ function clear_rate_limit(string $type, string $account = ''): void
 function admin_guard(): void
 {
     if (empty($_SESSION['admin_id'])) {
+        if (is_ajax_request()) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url('admin')]);
+            exit;
+        }
         header('Location: ' . url('admin'));
         exit;
     }
     if (!empty($_SESSION['admin_last_seen']) && time() - $_SESSION['admin_last_seen'] > SESSION_TIMEOUT) {
         unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_last_seen']);
+        if (is_ajax_request()) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url('admin?timeout=1')]);
+            exit;
+        }
         header('Location: ' . url('admin?timeout=1'));
         exit;
     }
@@ -116,6 +155,12 @@ function admin_guard(): void
 function customer_guard(): void
 {
     if (empty($_SESSION['user_id'])) {
+        if (is_ajax_request()) {
+            http_response_code(401);
+            header('Content-Type: application/json');
+            echo json_encode(['ok' => false, 'message' => 'Please sign in to continue.', 'login_url' => route('login')]);
+            exit;
+        }
         redirect(route('login'));
     }
 }

@@ -5,6 +5,9 @@ $titles = [
     'categories' => 'Categories',
     'orders' => 'Orders',
     'quotes' => 'Quote Requests',
+    'leads' => 'Discount Leads',
+    'contact-messages' => 'Contact Messages',
+    'pages' => 'About & Contact',
     'customers' => 'Customers',
     'payments' => 'Payments',
     'coupons' => 'Coupons',
@@ -37,7 +40,7 @@ $siteLogo = $settings['site_logo'] ?? 'public/assets/images/logo/aa-packages-log
     <div class="admin-main">
         <header class="admin-topbar">
             <div><span class="eyebrow">AA Packages Admin</span><h1><?= e($titles[$view] ?? 'Dashboard') ?></h1></div>
-            <div class="admin-user"><span><?= e($_SESSION['admin_name'] ?? 'Admin') ?></span><a class="btn btn-outline" href="<?= admin_route('logout') ?>">Logout</a></div>
+            <div class="admin-user"><span><?= e($_SESSION['admin_name'] ?? 'Admin') ?></span><button class="btn btn-outline" type="button" data-admin-logout-open>Logout</button></div>
         </header>
         <main class="admin-content">
             <?php if (!empty($_SESSION['admin_flash'])): ?>
@@ -47,6 +50,19 @@ $siteLogo = $settings['site_logo'] ?? 'public/assets/images/logo/aa-packages-log
             <?php require ROOT_PATH . '/views/admin/' . $view . '.php'; ?>
         </main>
     </div>
+    <dialog class="admin-confirm-dialog" data-admin-logout-modal>
+        <div class="confirm-modal__panel" role="dialog" aria-modal="true" aria-labelledby="admin-logout-title">
+            <h2 id="admin-logout-title">Are you sure you want to logout?</h2>
+            <p>You will need to sign in again to manage the website.</p>
+            <div class="confirm-modal__actions">
+                <button class="btn btn-outline" type="button" data-admin-logout-cancel>Cancel</button>
+                <form method="post" action="<?= admin_route('logout') ?>">
+                    <?= csrf_field() ?>
+                    <button class="btn btn-primary" type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
     <script src="<?= asset('assets/js/app.js') ?>"></script>
 </body>
 </html>
