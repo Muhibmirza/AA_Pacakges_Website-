@@ -6,7 +6,27 @@
   const apiBaseUrl = window.AA_PACKAGES?.apiBaseUrl || baseUrl;
   const money = (value) => 'Rs. ' + Math.round(Number(value || 0)).toLocaleString();
 
-  qsa('[data-nav-toggle]').forEach((btn) => btn.addEventListener('click', () => qs('[data-nav]')?.classList.toggle('is-open')));
+  const siteNav = qs('[data-nav]');
+  const navToggle = qs('[data-nav-toggle]');
+  const closeNav = () => {
+    siteNav?.classList.remove('is-open');
+    navToggle?.setAttribute('aria-expanded', 'false');
+    document.body.classList.remove('nav-open');
+  };
+  const openNav = () => {
+    siteNav?.classList.add('is-open');
+    navToggle?.setAttribute('aria-expanded', 'true');
+    document.body.classList.add('nav-open');
+  };
+  navToggle?.addEventListener('click', () => siteNav?.classList.contains('is-open') ? closeNav() : openNav());
+  qsa('[data-nav-close]').forEach((btn) => btn.addEventListener('click', closeNav));
+  qsa('a', siteNav).forEach((link) => link.addEventListener('click', closeNav));
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeNav();
+  });
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 1100) closeNav();
+  });
 
   const revealObserver = 'IntersectionObserver' in window ? new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
