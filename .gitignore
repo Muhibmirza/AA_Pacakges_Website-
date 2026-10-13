@@ -2,6 +2,7 @@
 /storage/rate_limits/*
 /storage/*.log
 /storage/npm-cache/
+/storage/tools/
 /uploads/*
 !/storage/logs/.gitkeep
 !/storage/rate_limits/.gitkeep

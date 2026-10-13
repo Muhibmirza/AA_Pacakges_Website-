@@ -233,10 +233,10 @@
   });
 
   const storageGet = (key) => {
-    try { return localStorage.getItem(key); } catch (_) { return null; }
+    try { return sessionStorage.getItem(key); } catch (_) { return null; }
   };
   const storageSet = (key, value) => {
-    try { localStorage.setItem(key, value); } catch (_) { /* Storage can be unavailable in private contexts. */ }
+    try { sessionStorage.setItem(key, value); } catch (_) { /* Storage can be unavailable in private contexts. */ }
   };
   const discountModal = qs('[data-discount-modal]');
   const discountReopen = qs('[data-discount-reopen]');

@@ -25,6 +25,7 @@ Change both passwords immediately after the client demo. The default admin is sa
 ## New Storefront Features
 
 - The first-order popup stores subscribers in `discount_leads` and issues the working `WELCOME5` coupon.
+- The offer opens automatically once per browser session; closing it reveals the circular 5% button for reopening.
 - WhatsApp uses `AA_WHATSAPP_NUMBER` from the environment (digits only, including country code).
 - Contact Us submissions are stored in `contact_messages`.
 - Admin pages `/admin/leads` and `/admin/contact-messages` provide management, deletion, search, and lead CSV export.
