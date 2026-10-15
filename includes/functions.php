@@ -55,7 +55,41 @@ function route(string $name = 'home', array $params = []): string
 
 function admin_route(string $page = 'dashboard'): string
 {
-    return url('admin/' . trim($page, '/'));
+    return url(ADMIN_PATH . '/' . trim($page, '/'));
+}
+
+function request_origin(): string
+{
+    if (SITE_URL !== '') {
+        return SITE_URL;
+    }
+    $forwardedProto = strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')[0]));
+    $isHttps = $forwardedProto === 'https' || (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+    $host = preg_replace('/[^a-z0-9.\-:\[\]]/i', '', $_SERVER['HTTP_HOST'] ?? '') ?: 'localhost';
+    return ($isHttps ? 'https' : 'http') . '://' . $host;
+}
+
+function absolute_url(string $path = ''): string
+{
+    if (preg_match('#^https?://#i', $path)) {
+        return $path;
+    }
+    return request_origin() . '/' . ltrim($path, '/');
+}
+
+function canonical_url(): string
+{
+    $page = current_page();
+    if ($page === 'home') {
+        return absolute_url(url(''));
+    }
+    if ($page === 'product' && !empty($_GET['slug'])) {
+        return absolute_url(route('product', ['slug' => (string)$_GET['slug']]));
+    }
+    if ($page === 'shop' && !empty($_GET['category'])) {
+        return absolute_url(route('category', ['slug' => (string)$_GET['category']]));
+    }
+    return absolute_url(route($page));
 }
 
 function asset(string $path): string
@@ -113,7 +147,7 @@ function money(float $amount): string
 
 function redirect(string $path): never
 {
-    if (strpos($path, 'http') === 0 || strpos($path, BASE_URL) === 0) {
+    if (preg_match('#^https?://#i', $path) || str_starts_with($path, '/')) {
         header('Location: ' . $path);
     } else {
         header('Location: ' . url($path));

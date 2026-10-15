@@ -81,6 +81,12 @@ switch ($page) {
     case 'contact-submit':
         (new MarketingController($pdo, $settings))->contactMessage();
         break;
+    case 'sitemap':
+        (new FrontendController($pdo, $settings))->sitemap();
+        break;
+    case 'robots':
+        (new FrontendController($pdo, $settings))->robots();
+        break;
     case 'faqs':
     case 'terms':
     case 'privacy':

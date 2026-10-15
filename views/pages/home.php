@@ -68,6 +68,7 @@
     </div>
 </section>
 
+<?php if ($testimonials): ?>
 <section class="section">
     <div class="container section-head">
         <span class="eyebrow">Trusted by trade buyers</span>
@@ -84,6 +85,7 @@
         <?php endforeach; ?>
     </div>
 </section>
+<?php endif; ?>
 
 <section class="newsletter section-tint">
     <div class="container newsletter-inner reveal">

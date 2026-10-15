@@ -61,7 +61,7 @@ class AdminController
             verify_csrf();
             unset($_SESSION['admin_id'], $_SESSION['admin_name'], $_SESSION['admin_last_seen']);
             session_regenerate_id(true);
-            header('Location: ' . url('admin'));
+            header('Location: ' . url(ADMIN_PATH));
             exit;
         }
         admin_guard();
@@ -104,9 +104,6 @@ class AdminController
             case 'customers':
                 $data = ['customers' => $this->db->query('SELECT u.*, COUNT(o.id) AS order_count, COALESCE(SUM(o.total),0) AS total_spent FROM users u LEFT JOIN orders o ON o.user_id = u.id GROUP BY u.id ORDER BY u.created_at DESC')->fetchAll()];
                 break;
-            case 'payments':
-                $data = ['payments' => $this->db->query('SELECT p.*, o.order_no FROM payments p JOIN orders o ON o.id = p.order_id ORDER BY p.created_at DESC')->fetchAll()];
-                break;
             case 'coupons':
                 $data = [
                     'coupons' => $this->db->query('SELECT * FROM coupons ORDER BY created_at DESC')->fetchAll(),
@@ -131,7 +128,7 @@ class AdminController
             default:
                 $data = $this->dashboardData();
         }
-        $view = in_array($page, ['products','categories','orders','quotes','leads','contact-messages','pages','customers','payments','coupons','reports','banners','settings','admins'], true) ? $page : 'dashboard';
+        $view = in_array($page, ['products','categories','orders','quotes','leads','contact-messages','pages','customers','coupons','reports','banners','settings','admins'], true) ? $page : 'dashboard';
         $settings = $this->settings;
         extract($data);
         require ROOT_PATH . '/views/admin/layout.php';
@@ -145,8 +142,22 @@ class AdminController
             'customers' => (int)$this->db->query('SELECT COUNT(*) FROM users')->fetchColumn(),
             'pending' => (int)$this->db->query('SELECT COUNT(*) FROM orders WHERE status = "pending"')->fetchColumn(),
         ];
+        $dailyRows = $this->db->query('SELECT DATE(created_at) AS order_date, COUNT(*) AS order_count FROM orders WHERE created_at >= CURDATE() - INTERVAL 6 DAY GROUP BY DATE(created_at)')->fetchAll();
+        $dailyCounts = [];
+        foreach ($dailyRows as $row) {
+            $dailyCounts[$row['order_date']] = (int)$row['order_count'];
+        }
+        $salesLastSevenDays = [];
+        for ($daysAgo = 6; $daysAgo >= 0; $daysAgo--) {
+            $date = date('Y-m-d', strtotime("-{$daysAgo} days"));
+            $salesLastSevenDays[] = [
+                'label' => date('D', strtotime($date)),
+                'count' => $dailyCounts[$date] ?? 0,
+            ];
+        }
         return [
             'stats' => $stats,
+            'salesLastSevenDays' => $salesLastSevenDays,
             'recentOrders' => (new Order($this->db))->recent(8),
             'lowStock' => $this->db->query('SELECT name, stock_quantity FROM products WHERE stock_quantity <= 100 ORDER BY stock_quantity ASC LIMIT 8')->fetchAll(),
             'recentQuotes' => $this->db->query('SELECT * FROM quote_requests WHERE status IN ("new","contacted") ORDER BY created_at DESC LIMIT 6')->fetchAll(),

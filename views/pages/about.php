@@ -33,7 +33,7 @@
     <div class="container about-stats reveal">
         <article><strong><?= (int)$stats['products'] ?>+</strong><span>Packaging products</span></article>
         <article><strong><?= (int)$stats['categories'] ?></strong><span>Product categories</span></article>
-        <article><strong><?= (int)$stats['orders'] ?>+</strong><span>Orders supported</span></article>
+        <article><strong>COD</strong><span>Pay on delivery</span></article>
         <article><strong>1</strong><span>Standard: dependable quality</span></article>
     </div>
 </section>

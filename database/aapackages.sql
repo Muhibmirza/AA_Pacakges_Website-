@@ -1,6 +1,3 @@
-CREATE DATABASE IF NOT EXISTS aapackages CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE aapackages;
-
 SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS payments, order_items, orders, reviews, product_images, product_variants, quantity_price_tiers, coupons, products, category_banners, categories, quote_requests, discount_leads, contact_messages, testimonials, usp_blocks, banners, pages, admins, users, settings;
 SET FOREIGN_KEY_CHECKS=1;
@@ -121,7 +118,7 @@ CREATE TABLE orders (
   discount DECIMAL(12,2) NOT NULL DEFAULT 0,
   total DECIMAL(12,2) NOT NULL,
   status VARCHAR(40) NOT NULL DEFAULT 'pending',
-  payment_method VARCHAR(60) NOT NULL,
+  payment_method VARCHAR(60) NOT NULL DEFAULT 'cash_on_delivery',
   payment_status VARCHAR(40) NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
@@ -140,17 +137,6 @@ CREATE TABLE order_items (
   subtotal DECIMAL(12,2) NOT NULL,
   FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE payments (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  order_id INT UNSIGNED NOT NULL,
-  transaction_ref VARCHAR(120),
-  method VARCHAR(60) NOT NULL,
-  amount DECIMAL(12,2) NOT NULL,
-  status VARCHAR(40) NOT NULL DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE reviews (
@@ -254,11 +240,7 @@ CREATE TABLE settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO admins (name, email, password_hash, role) VALUES
-('AA Packages Admin', 'admin@aapackages.local', '$2y$10$ZmNmbJ1giEIO3vQnn/.7gumlNpgpi1uO99kCbnjgv4r1bGDHxPydu', 'super_admin');
-
-INSERT INTO users (name, email, phone, password_hash, address) VALUES
-('Ahmed Bakery', 'buyer@example.com', '03000000001', '$2y$10$2ongVDqmnQVVMN..3BF6f.eereJ.L/adxYZ4lIVcPK1OsqR406bn6', 'Main Boulevard, Lahore'),
-('Sana Gift Studio', 'sana@example.com', '03000000002', '$2y$10$2ongVDqmnQVVMN..3BF6f.eereJ.L/adxYZ4lIVcPK1OsqR406bn6', 'DHA Phase 5, Lahore');
+('AA Packages Admin', 'admin@aapackages.com', '$2y$10$QZzNBa5Oh0GIxls5Jj45d.5rmkM.0g4Dh7iCr9O/Pau5kb8USXQoq', 'super_admin');
 
 INSERT INTO categories (name, slug, description, image, sort_order) VALUES
 ('Sweet/Mithai Boxes','sweet-mithai-boxes','Elegant food-safe boxes for mithai, sweets, and bakery assortments.','public/assets/images/categories/sweet-mithai-boxes.png',1),
@@ -281,7 +263,7 @@ INSERT INTO category_banners (category_id, banner_image, tagline, cta_text, cta_
 (3,'public/assets/images/categories/pizza-boxes.png','Corrugated boxes sized for hot delivery, takeaway counters, and high-volume restaurant orders.','Shop Pizza Boxes','#products'),
 (4,'public/assets/images/categories/perfume-boxes.png','Rigid and sleeve-style packaging for perfume, cosmetics, and premium retail products.','Shop Perfume Boxes','#products'),
 (5,'public/assets/images/categories/gift-boxes.png','Retail-ready gift boxes with refined structure, neat finishes, and premium feel.','Shop Gift Boxes','#products'),
-(6,'public/assets/images/categories/custom-printed-boxes.png','Bring your brand to the box with custom sizing, artwork, and wholesale print runs.','Request Custom Quote','/aapackages/quote'),
+(6,'public/assets/images/categories/custom-printed-boxes.png','Bring your brand to the box with custom sizing, artwork, and wholesale print runs.','Request Custom Quote','/quote'),
 (7,'public/assets/images/stock/tokra.jpg','Round and square tokra packaging for mithai, gifting, and larger hamper orders.','Shop Tokra','#products'),
 (8,'public/assets/images/stock/attendance-cards.jpg','Clean attendance card packs for schools, offices, and organized record keeping.','Shop Attendance Cards','#products'),
 (9,'public/assets/images/stock/attendance-cards.jpg','Decorative tags that give cakes and bakery orders a finished presentation.','Shop Cake Tags','#products'),
@@ -350,9 +332,9 @@ INSERT INTO quantity_price_tiers (product_id, min_quantity, unit_price)
 SELECT id, 500, ROUND(base_price * .82, 2) FROM products;
 
 INSERT INTO banners (position, image_path, kicker, heading, subtext, button_text, button_link, sort_order) VALUES
-('home_hero','public/assets/images/categories/custom-printed-boxes.png','Custom Printed Packaging','Boxes that make your brand look ready for retail','Custom printed mailer, gift, food, and product boxes for growing businesses and wholesale buyers.','Get a Quote','/aapackages/quote',1),
-('home_hero','public/assets/images/categories/cake-boxes.png','Bakery Packaging','Cake and dessert boxes built for daily bakery counters','Window cake boxes, pastry boxes, and sweet packaging with practical wholesale pricing.','Shop Bakery Boxes','/aapackages/category/cake-boxes',2),
-('home_hero','public/assets/images/categories/pizza-boxes.png','Restaurant Supply','Pizza boxes for takeaway, delivery, and bulk restaurant supply','Corrugated boxes with reliable structure and fast repeat ordering for food businesses.','Shop Pizza Boxes','/aapackages/category/pizza-boxes',3);
+('home_hero','public/assets/images/categories/custom-printed-boxes.png','Custom Printed Packaging','Boxes that make your brand look ready for retail','Custom printed mailer, gift, food, and product boxes for growing businesses and wholesale buyers.','Get a Quote','/quote',1),
+('home_hero','public/assets/images/categories/cake-boxes.png','Bakery Packaging','Cake and dessert boxes built for daily bakery counters','Window cake boxes, pastry boxes, and sweet packaging with practical wholesale pricing.','Shop Bakery Boxes','/category/cake-boxes',2),
+('home_hero','public/assets/images/categories/pizza-boxes.png','Restaurant Supply','Pizza boxes for takeaway, delivery, and bulk restaurant supply','Corrugated boxes with reliable structure and fast repeat ordering for food businesses.','Shop Pizza Boxes','/category/pizza-boxes',3);
 
 INSERT INTO usp_blocks (icon_label, title, description, sort_order) VALUES
 ('Q','Premium Quality Board','Food-safe, rigid, and corrugated options selected for daily retail use.',1),
@@ -360,37 +342,8 @@ INSERT INTO usp_blocks (icon_label, title, description, sort_order) VALUES
 ('W','Wholesale Pricing','Practical quantity tiers for bakeries, restaurants, and retailers.',3),
 ('F','Fast Turnaround','Responsive quoting and reliable supply for urgent packaging needs.',4);
 
-INSERT INTO testimonials (name, company_name, rating, text, sort_order) VALUES
-('Bilal Ahmed','Ahmed Bakers',5,'The cake boxes are strong, clean, and consistent. Reordering for branches is simple.',1),
-('Maham Raza','Mithai House',5,'Their mithai boxes look premium and hold up well during busy wedding season.',2),
-('Danish Khan','Slice Point Pizza',5,'Good pizza box quality and reliable bulk pricing for our delivery operation.',3);
-
 INSERT INTO coupons (code, discount_type, discount_value, expires_at, usage_limit) VALUES
-('WELCOME5','percentage',5,'2027-12-31',0),
-('TRADE5','percentage',5,'2026-12-31',200),
-('BULK1000','fixed',1000,'2026-12-31',50);
-
-INSERT INTO orders (order_no, user_id, customer_name, phone, email, business_name, address, city, area, subtotal, delivery_fee, discount, total, status, payment_method, payment_status) VALUES
-('AAP-260717-1001',1,'Ahmed Bakery','03000000001','buyer@example.com','Ahmed Bakers','Main Boulevard','Lahore','Gulberg',6350,350,0,6700,'processing','cash_on_delivery','pending'),
-('AAP-260717-1002',2,'Sana Gift Studio','03000000002','sana@example.com','Sana Gift Studio','DHA Phase 5','Lahore','DHA',6550,350,0,6900,'out-for-delivery','bank_transfer','paid'),
-('AAP-260717-1003',NULL,'Walk-in Buyer','03000000003','guest@example.com','','Model Town','Lahore','Model Town',2950,350,0,3300,'delivered','jazzcash','paid');
-
-INSERT INTO order_items (order_id, product_id, product_name, variant_label, unit_price, quantity, subtotal) VALUES
-(1,4,'Window Cake Box 2lb','2lb / Window board / Pack of 25',1320,2,2640),
-(1,7,'Classic Pizza Box 12 inch','12 inch / Corrugated / Pack of 50',1850,2,3700),
-(2,13,'Magnetic Gift Box Medium','Medium / Rigid magnetic / Pack of 10',2950,1,2950),
-(2,15,'Luxury Gift Hamper Box','Large / Rigid board / Pack of 10',3600,1,3600),
-(3,13,'Magnetic Gift Box Medium','Medium / Rigid magnetic / Pack of 10',2950,1,2950);
-
-INSERT INTO payments (order_id, transaction_ref, method, amount, status) VALUES
-(1,'SANDBOX-AAP-260717-1001','cash_on_delivery',6700,'pending'),
-(2,'BT-AAP-260717-1002','bank_transfer',6900,'paid'),
-(3,'JC-AAP-260717-1003','jazzcash',3300,'paid');
-
-INSERT INTO quote_requests (business_name, contact_name, phone, email, box_category, box_size, quantity, custom_printing, message, status) VALUES
-('Nawab Sweets','Farhan Ali','03001112223','farhan@nawabsweets.example','Sweet/Mithai Boxes','1kg',2000,1,'Need Eid gift box printing with logo and blue pattern.','new'),
-('Urban Scents','Hira Malik','03004445556','hira@urbanscents.example','Perfume Boxes','50ml',1000,1,'Rigid box with insert and matte lamination.','contacted'),
-('Crust Corner','Omar Saeed','03007778889','omar@crustcorner.example','Pizza Boxes','12 inch',5000,0,'Plain white pizza boxes for monthly supply.','quoted');
+('WELCOME5','percentage',5,'2030-12-31',0);
 
 INSERT INTO pages (slug, title, content) VALUES
 ('about','Packaging that protects your product and presents your brand well.','AA Packages began with a simple focus: help bakeries, sweet shops, restaurants, gift sellers, and growing brands find packaging that is sturdy, presentable, and sensibly priced.\n\nToday we support retail orders, wholesale quantities, custom sizes, and branded print runs. Our team works closely with customers so the box fits the product, workflow, and budget.'),

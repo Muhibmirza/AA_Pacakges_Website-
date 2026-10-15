@@ -29,12 +29,6 @@
             <p><?= e($settings['business_hours'] ?? 'Mon-Sat, 10:00 AM - 7:00 PM') ?></p>
             <div class="payment-icons" aria-label="Accepted payment methods">
                 <img src="<?= asset('assets/images/payments/cod.svg') ?>" alt="Cash on Delivery">
-                <img src="<?= asset('assets/images/payments/visa.svg') ?>" alt="Visa">
-                <img src="<?= asset('assets/images/payments/mastercard.svg') ?>" alt="Mastercard">
-                <img src="<?= asset('assets/images/payments/debit-card.svg') ?>" alt="Debit Card">
-                <img src="<?= asset('assets/images/payments/jazzcash.svg') ?>" alt="JazzCash">
-                <img src="<?= asset('assets/images/payments/easypaisa.svg') ?>" alt="Easypaisa">
-                <img src="<?= asset('assets/images/payments/bank-transfer.svg') ?>" alt="Bank Transfer">
             </div>
         </div>
     </div>

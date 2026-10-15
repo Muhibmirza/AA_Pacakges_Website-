@@ -200,6 +200,10 @@ label span { font-weight: 500; color: #758296; }
 .payment-option { border: 1px solid var(--color-border); border-radius: var(--radius); padding: 12px; display: flex; align-items: center; gap: 10px; margin: 0; min-height: 72px; }
 .payment-option input { width: auto; }
 .payment-option img { width: 70px; height: 34px; object-fit: contain; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; padding: 3px; }
+.payment-grid--cod { grid-template-columns: minmax(0, 420px); }
+.payment-option--selected { background: #f2f8fd; border-color: var(--color-primary); }
+.payment-option--selected span { display: grid; gap: 2px; }
+.payment-option--selected small { color: #617185; font-size: 13px; font-weight: 500; }
 .bank-note { background: #f2f8fd; border: 1px solid var(--color-border); border-radius: var(--radius); padding: 12px; color: #42546a; }
 .stepper { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
 .stepper span { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--color-border); background: #fff; font-weight: 800; color: #617185; }

@@ -2,7 +2,7 @@
   const qs = (sel, root = document) => root.querySelector(sel);
   const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || window.AA_PACKAGES?.csrf || '';
-  const baseUrl = window.AA_PACKAGES?.baseUrl || '/aapackages/';
+  const baseUrl = window.AA_PACKAGES?.baseUrl || '/';
   const apiBaseUrl = window.AA_PACKAGES?.apiBaseUrl || baseUrl;
   const money = (value) => 'Rs. ' + Math.round(Number(value || 0)).toLocaleString();
 

@@ -5,7 +5,7 @@ require_once __DIR__ . '/BaseModel.php';
 
 class Order extends BaseModel
 {
-    public function create(array $customer, array $cart, string $paymentMethod, ?int $userId = null, array $pricing = []): int
+    public function create(array $customer, array $cart, ?int $userId = null, array $pricing = []): int
     {
         $this->db->beginTransaction();
         try {
@@ -17,8 +17,8 @@ class Order extends BaseModel
             $discount = min($subtotal, max(0, (float)($pricing['discount'] ?? 0)));
             $total = max(0, $subtotal + $delivery - $discount);
             $orderNo = 'AAP-' . date('ymd') . '-' . random_int(1000, 9999);
-            $stmt = $this->db->prepare('INSERT INTO orders (order_no, user_id, customer_name, phone, email, business_name, address, city, area, notes, subtotal, delivery_fee, discount, total, status, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending", ?, "pending")');
-            $stmt->execute([$orderNo, $userId, $customer['name'], $customer['phone'], $customer['email'], $customer['business_name'] ?? '', $customer['address'], $customer['city'], $customer['area'], $customer['notes'] ?? '', $subtotal, $delivery, $discount, $total, $paymentMethod]);
+            $stmt = $this->db->prepare('INSERT INTO orders (order_no, user_id, customer_name, phone, email, business_name, address, city, area, notes, subtotal, delivery_fee, discount, total, status, payment_method, payment_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "pending", "cash_on_delivery", "pending")');
+            $stmt->execute([$orderNo, $userId, $customer['name'], $customer['phone'], $customer['email'], $customer['business_name'] ?? '', $customer['address'], $customer['city'], $customer['area'], $customer['notes'] ?? '', $subtotal, $delivery, $discount, $total]);
             $orderId = (int)$this->db->lastInsertId();
             $itemStmt = $this->db->prepare('INSERT INTO order_items (order_id, product_id, product_name, variant_label, unit_price, quantity, subtotal) VALUES (?, ?, ?, ?, ?, ?, ?)');
             $stockStmt = $this->db->prepare('UPDATE products SET stock_quantity = GREATEST(stock_quantity - ?, 0) WHERE id = ?');
@@ -27,8 +27,6 @@ class Order extends BaseModel
                 $itemStmt->execute([$orderId, $item['id'], $item['name'], $item['variant'] ?? '', $item['price'], $item['qty'], $line]);
                 $stockStmt->execute([$item['qty'], $item['id']]);
             }
-            $pay = $this->db->prepare('INSERT INTO payments (order_id, transaction_ref, method, amount, status) VALUES (?, ?, ?, ?, "pending")');
-            $pay->execute([$orderId, 'SANDBOX-' . $orderNo, $paymentMethod, $total]);
             if (!empty($pricing['coupon_id'])) {
                 $couponStmt = $this->db->prepare('UPDATE coupons SET used_count = used_count + 1 WHERE id = ? AND is_active = 1 AND (usage_limit = 0 OR used_count < usage_limit)');
                 $couponStmt->execute([(int)$pricing['coupon_id']]);

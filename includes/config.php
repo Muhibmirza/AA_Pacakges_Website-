@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 define('APP_NAME', 'AA Packages');
 $baseUrl = getenv('AA_BASE_URL');
-define('BASE_URL', $baseUrl === false ? '/aapackages' : rtrim($baseUrl, '/'));
+define('BASE_URL', $baseUrl === false ? '' : rtrim($baseUrl, '/'));
+define('ADMIN_PATH', 'aapackagesadmin');
+$siteUrl = trim((string)(getenv('AA_SITE_URL') ?: ''));
+define('SITE_URL', filter_var($siteUrl, FILTER_VALIDATE_URL) ? rtrim($siteUrl, '/') : '');
 define('ROOT_PATH', dirname(__DIR__));
 define('PUBLIC_PATH', ROOT_PATH . '/public');
 $uploadPath = getenv('AA_UPLOAD_PATH');
@@ -17,11 +20,13 @@ define('WHATSAPP_NUMBER', $whatsAppNumber ?: '923108504003');
 $sessionTimeout = (int)(getenv('AA_SESSION_TIMEOUT') ?: 28800);
 define('SESSION_TIMEOUT', max(1800, $sessionTimeout));
 define('LOG_PATH', ROOT_PATH . '/storage/logs');
+define('SESSION_PATH', ROOT_PATH . '/storage/sessions');
 define('RATE_LIMIT_PATH', ROOT_PATH . '/storage/rate_limits');
 define('ALLOWED_ORIGINS', array_values(array_filter(array_map('trim', explode(',', (string)(getenv('AA_ALLOWED_ORIGINS') ?: ''))))));
 
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
+ini_set('expose_php', '0');
 if (!is_dir(LOG_PATH)) {
     mkdir(LOG_PATH, 0755, true);
 }

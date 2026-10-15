@@ -1,5 +1,3 @@
-USE aapackages;
-
 CREATE TABLE IF NOT EXISTS discount_leads (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(160),

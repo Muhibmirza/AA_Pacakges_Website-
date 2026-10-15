@@ -43,6 +43,7 @@ body.admin-shell, .admin-login-body { background: #f3f7fb; }
 .admin-table tr:nth-child(even) td { background: #fbfdff; }
 .admin-table .num { text-align: right; }
 .admin-table small { display: block; color: #718197; margin-top: 4px; }
+.empty-state { padding: 24px !important; text-align: center !important; color: #718197; }
 .thumb-col { width: 76px; }
 .actions-col { width: 132px; text-align: center !important; }
 .thumb { width: 56px; height: 56px; border-radius: 7px; object-fit: cover; border: 1px solid var(--color-border); }

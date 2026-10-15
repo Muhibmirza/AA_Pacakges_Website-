@@ -4,8 +4,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    if (!is_dir(SESSION_PATH)) {
+        mkdir(SESSION_PATH, 0755, true);
+    }
+    session_save_path(SESSION_PATH);
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    $isAdminRequest = preg_match('#/admin(?:/|$)#', $requestPath) === 1;
+    $adminPattern = '#/' . preg_quote(ADMIN_PATH, '#') . '(?:/|$)#';
+    $isAdminRequest = preg_match($adminPattern, $requestPath) === 1;
     session_name($isAdminRequest ? 'aa_packages_admin_session' : 'aa_packages_session');
     $secureCookie = filter_var(getenv('AA_SESSION_SECURE') ?: (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'), FILTER_VALIDATE_BOOL);
     session_set_cookie_params([
@@ -16,6 +21,16 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
         'samesite' => 'Lax',
     ]);
     session_start();
+}
+
+header_remove('X-Powered-By');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
+header("Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; object-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self'; frame-src https://www.google.com https://maps.google.com");
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
 }
 
 function is_ajax_request(): bool
@@ -132,10 +147,10 @@ function admin_guard(): void
         if (is_ajax_request()) {
             http_response_code(401);
             header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url('admin')]);
+            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url(ADMIN_PATH)]);
             exit;
         }
-        header('Location: ' . url('admin'));
+        header('Location: ' . url(ADMIN_PATH));
         exit;
     }
     if (!empty($_SESSION['admin_last_seen']) && time() - $_SESSION['admin_last_seen'] > SESSION_TIMEOUT) {
@@ -143,10 +158,10 @@ function admin_guard(): void
         if (is_ajax_request()) {
             http_response_code(401);
             header('Content-Type: application/json');
-            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url('admin?timeout=1')]);
+            echo json_encode(['ok' => false, 'message' => 'Your admin session has expired. Please sign in again.', 'login_url' => url(ADMIN_PATH . '?timeout=1')]);
             exit;
         }
-        header('Location: ' . url('admin?timeout=1'));
+        header('Location: ' . url(ADMIN_PATH . '?timeout=1'));
         exit;
     }
     $_SESSION['admin_last_seen'] = time();

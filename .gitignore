@@ -1,11 +1,13 @@
 /storage/logs/*
 /storage/rate_limits/*
+/storage/sessions/*
 /storage/*.log
 /storage/npm-cache/
 /storage/tools/
 /uploads/*
 !/storage/logs/.gitkeep
 !/storage/rate_limits/.gitkeep
+!/storage/sessions/.gitkeep
 !/uploads/.gitkeep
 .env
 .env.*

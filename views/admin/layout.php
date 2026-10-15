@@ -9,7 +9,6 @@ $titles = [
     'contact-messages' => 'Contact Messages',
     'pages' => 'About & Contact',
     'customers' => 'Customers',
-    'payments' => 'Payments',
     'coupons' => 'Coupons',
     'reports' => 'Reports',
     'banners' => 'Banners',
@@ -24,9 +23,10 @@ $siteLogo = $settings['site_logo'] ?? 'public/assets/images/logo/aa-packages-log
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow, noarchive">
     <title><?= e($titles[$view] ?? 'Admin') ?> - AA Packages</title>
-    <link rel="stylesheet" href="<?= asset('assets/css/style.css') ?>">
-    <link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/style.css') ?>?v=<?= (int)filemtime(ROOT_PATH . '/public/assets/css/style.css') ?>">
+    <link rel="stylesheet" href="<?= asset('assets/css/admin.css') ?>?v=<?= (int)filemtime(ROOT_PATH . '/public/assets/css/admin.css') ?>">
 </head>
 <body class="admin-shell">
     <aside class="admin-sidebar">
@@ -63,6 +63,6 @@ $siteLogo = $settings['site_logo'] ?? 'public/assets/images/logo/aa-packages-log
             </div>
         </div>
     </dialog>
-    <script src="<?= asset('assets/js/app.js') ?>"></script>
+    <script src="<?= asset('assets/js/app.js') ?>?v=<?= (int)filemtime(ROOT_PATH . '/public/assets/js/app.js') ?>"></script>
 </body>
 </html>

@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="140" height="48" viewBox="0 0 140 48" role="img" aria-label="JazzCash">
-  <rect width="140" height="48" rx="8" fill="#fff"/>
-  <circle cx="24" cy="24" r="14" fill="#F58220"/>
-  <path fill="#EE1C25" d="M16 16h17l-9 16h-8l7-10h-7z"/>
-  <text x="44" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#E31B23">Jazz</text>
-  <text x="85" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#F58220">Cash</text>
-</svg>

@@ -3,6 +3,7 @@
     <div class="table-tools"><input type="date"><input type="date"><select><option>Sales Report</option><option>Product-wise Report</option><option>Customer Report</option></select><button class="btn btn-primary">Run Report</button></div>
     <table class="admin-table"><thead><tr><th>Status</th><th class="num">Orders</th><th class="num">Revenue</th></tr></thead><tbody>
     <?php foreach ($orders as $row): ?><tr><td><span class="status-badge <?= status_class($row['status']) ?>"><?= e($row['status']) ?></span></td><td class="num"><?= (int)$row['count_orders'] ?></td><td class="num"><?= money((float)$row['revenue']) ?></td></tr><?php endforeach; ?>
+    <?php if (!$orders): ?><tr><td colspan="3" class="empty-state">No sales data yet.</td></tr><?php endif; ?>
     </tbody></table>
 </section>
 

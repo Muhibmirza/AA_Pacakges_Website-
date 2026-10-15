@@ -27,12 +27,7 @@ class CheckoutController extends BaseController
                     'area' => ['required' => true, 'min' => 2, 'max' => 100, 'label' => 'Area'],
                     'notes' => ['required' => false, 'max' => 800, 'label' => 'Notes'],
                 ]);
-                $method = $_POST['payment_method'] ?? 'cash_on_delivery';
-                $allowedMethods = ['cash_on_delivery','visa','mastercard','debit_card','jazzcash','easypaisa','bank_transfer'];
-                if (!in_array($method, $allowedMethods, true)) {
-                    throw new InvalidArgumentException('Invalid payment method.');
-                }
-                $orderId = (new Order($this->db))->create($data, $cartController->cart(), $method, $_SESSION['user_id'] ?? null, $cartController->totals());
+                $orderId = (new Order($this->db))->create($data, $cartController->cart(), $_SESSION['user_id'] ?? null, $cartController->totals());
                 $_SESSION['cart'] = [];
                 unset($_SESSION['coupon']);
                 redirect(route('confirmation', ['id' => $orderId]));
@@ -40,7 +35,7 @@ class CheckoutController extends BaseController
                 $error = $e instanceof InvalidArgumentException ? $e->getMessage() : 'We could not place the order. Please review your details and try again.';
             }
         }
-        $this->render('checkout', ['cart' => $cartController->cart(), 'totals' => $cartController->totals(), 'error' => $error, 'paymentConfig' => require ROOT_PATH . '/includes/payment-config.php']);
+        $this->render('checkout', ['cart' => $cartController->cart(), 'totals' => $cartController->totals(), 'error' => $error]);
     }
 
     public function confirmation(): void

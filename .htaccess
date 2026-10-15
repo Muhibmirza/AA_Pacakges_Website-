@@ -1,9 +1,26 @@
 DirectoryIndex index.php
+Options -Indexes -MultiViews
+
+<IfModule mod_headers.c>
+Header always unset X-Powered-By
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set Referrer-Policy "strict-origin-when-cross-origin"
+Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+</IfModule>
+
+<FilesMatch "(^\.|\.(?:sql|log|ini|env|bak|dist|md|lock|ya?ml|sh)$)">
+    Require all denied
+</FilesMatch>
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^admin/?$ admin/index.php [L,QSA]
-RewriteRule ^admin/([a-zA-Z0-9_-]+)/?$ admin/index.php?page=$1 [L,QSA]
+RewriteRule ^(?:includes|controllers|models|views|database|storage|deploy)(?:/|$) - [R=404,L,NC]
+RewriteRule ^admin(?:/|$) - [R=404,L,NC]
+RewriteRule ^aapackagesadmin/?$ aapackagesadmin/index.php [L,QSA]
+RewriteRule ^aapackagesadmin/([a-zA-Z0-9_-]+)/?$ aapackagesadmin/index.php?page=$1 [L,QSA]
+RewriteRule ^robots\.txt$ index.php?page=robots [L,QSA]
+RewriteRule ^sitemap\.xml$ index.php?page=sitemap [L,QSA]
 RewriteRule ^product/([a-zA-Z0-9_-]+)/?$ index.php?page=product&slug=$1 [L,QSA]
 RewriteRule ^category/([a-zA-Z0-9_-]+)/?$ index.php?page=shop&category=$1 [L,QSA]
 RewriteRule ^(shop|quote|cart|checkout|confirmation|login|register|logout|account|track|about|contact|faqs|terms|privacy|returns|cart-add|cart-update|cart-drawer|cart-coupon|discount-lead|contact-submit)/?$ index.php?page=$1 [L,QSA]

@@ -73,7 +73,6 @@ class FrontendController extends BaseController
         $stats = [
             'products' => (int)$this->db->query('SELECT COUNT(*) FROM products WHERE is_active = 1')->fetchColumn(),
             'categories' => (int)$this->db->query('SELECT COUNT(*) FROM categories WHERE is_active = 1')->fetchColumn(),
-            'orders' => (int)$this->db->query('SELECT COUNT(*) FROM orders')->fetchColumn(),
         ];
         $this->render('about', ['stats' => $stats, 'page' => $page]);
     }
@@ -94,6 +93,58 @@ class FrontendController extends BaseController
             $message = $order ? '' : 'No matching order found for that Order ID and phone number.';
         }
         $this->render('track', ['order' => $order, 'message' => $message]);
+    }
+
+    public function sitemap(): never
+    {
+        $urls = [
+            ['loc' => absolute_url(route()), 'priority' => '1.0'],
+            ['loc' => absolute_url(route('shop')), 'priority' => '0.9'],
+            ['loc' => absolute_url(route('about')), 'priority' => '0.7'],
+            ['loc' => absolute_url(route('contact')), 'priority' => '0.7'],
+            ['loc' => absolute_url(route('quote')), 'priority' => '0.8'],
+            ['loc' => absolute_url(route('faqs')), 'priority' => '0.6'],
+            ['loc' => absolute_url(route('terms')), 'priority' => '0.3'],
+            ['loc' => absolute_url(route('privacy')), 'priority' => '0.3'],
+            ['loc' => absolute_url(route('returns')), 'priority' => '0.3'],
+        ];
+        foreach ((new Category($this->db))->all() as $category) {
+            $urls[] = ['loc' => absolute_url(route('category', ['slug' => $category['slug']])), 'priority' => '0.8'];
+        }
+        $products = $this->db->query('SELECT slug, created_at FROM products WHERE is_active = 1 ORDER BY id')->fetchAll();
+        foreach ($products as $product) {
+            $urls[] = [
+                'loc' => absolute_url(route('product', ['slug' => $product['slug']])),
+                'priority' => '0.8',
+                'lastmod' => date('Y-m-d', strtotime($product['created_at'])),
+            ];
+        }
+
+        header('Content-Type: application/xml; charset=UTF-8');
+        echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+        foreach ($urls as $url) {
+            echo "  <url>\n";
+            echo '    <loc>' . htmlspecialchars($url['loc'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . "</loc>\n";
+            if (!empty($url['lastmod'])) {
+                echo '    <lastmod>' . $url['lastmod'] . "</lastmod>\n";
+            }
+            echo '    <priority>' . $url['priority'] . "</priority>\n";
+            echo "  </url>\n";
+        }
+        echo '</urlset>';
+        exit;
+    }
+
+    public function robots(): never
+    {
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo "User-agent: *\n";
+        echo "Allow: /\n";
+        echo 'Disallow: /' . ADMIN_PATH . "/\n";
+        echo "Disallow: /cart\nDisallow: /checkout\nDisallow: /account\n";
+        echo 'Sitemap: ' . absolute_url(url('sitemap.xml')) . "\n";
+        exit;
     }
 }
 

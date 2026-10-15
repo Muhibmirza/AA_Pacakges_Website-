@@ -16,26 +16,12 @@
                 <label class="wide">Order notes<textarea name="notes"></textarea></label>
             </div>
             <h2>Payment method</h2>
-            <div class="payment-grid">
-                <?php
-                $paymentLogos = [
-                    'cash_on_delivery' => ['Cash on Delivery', 'cod.svg'],
-                    'visa' => ['Visa', 'visa.svg'],
-                    'mastercard' => ['Mastercard', 'mastercard.svg'],
-                    'debit_card' => ['Debit Card', 'debit-card.svg'],
-                    'jazzcash' => ['JazzCash', 'jazzcash.svg'],
-                    'easypaisa' => ['Easypaisa', 'easypaisa.svg'],
-                    'bank_transfer' => ['Bank Transfer', 'bank-transfer.svg'],
-                ];
-                foreach ($paymentLogos as $key => $payment): ?>
-                    <label class="payment-option">
-                        <input type="radio" name="payment_method" value="<?= e($key) ?>" <?= $key === 'cash_on_delivery' ? 'checked' : '' ?>>
-                        <img src="<?= asset('assets/images/payments/' . $payment[1]) ?>" alt="<?= e($payment[0]) ?>">
-                        <span><?= e($payment[0]) ?></span>
-                    </label>
-                <?php endforeach; ?>
+            <div class="payment-grid payment-grid--cod">
+                <div class="payment-option payment-option--selected">
+                    <img src="<?= asset('assets/images/payments/cod.svg') ?>" alt="Cash on Delivery">
+                    <span><strong>Cash on Delivery</strong><small>Pay in cash when your order is delivered.</small></span>
+                </div>
             </div>
-            <div class="bank-note">Bank transfer: <?= e($paymentConfig['bank_transfer']['account_title']) ?>, <?= e($paymentConfig['bank_transfer']['bank_name']) ?>, <?= e($paymentConfig['bank_transfer']['iban']) ?></div>
         </section>
         <aside class="summary-card sticky reveal">
             <h2>Order Summary</h2>

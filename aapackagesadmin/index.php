@@ -12,7 +12,7 @@ $controller = new AdminController($pdo, $settings);
 $page = $_GET['page'] ?? '';
 if ($page === '') {
     $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-    $base = rtrim(BASE_URL, '/') . '/admin';
+    $base = rtrim(BASE_URL, '/') . '/' . ADMIN_PATH;
     if (strpos($uri, $base) === 0) {
         $page = trim(substr($uri, strlen($base)), '/');
     }
@@ -20,7 +20,7 @@ if ($page === '') {
 $page = $page ?: 'login';
 $_GET['page'] = $page;
 
-if ($page === 'login' || $page === '') {
+if ($page === 'login') {
     $controller->login();
 } else {
     $controller->dispatch($page);
