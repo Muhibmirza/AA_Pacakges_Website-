@@ -1,6 +1,6 @@
 ﻿(function () {
-  const qs = (sel, root = document) => root.querySelector(sel);
-  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+  const qs = (sel, root = document) => root ? root.querySelector(sel) : null;
+  const qsa = (sel, root = document) => root ? Array.from(root.querySelectorAll(sel)) : [];
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content || window.AA_PACKAGES?.csrf || '';
   const baseUrl = window.AA_PACKAGES?.baseUrl || '/';
   const apiBaseUrl = window.AA_PACKAGES?.apiBaseUrl || baseUrl;
@@ -12,11 +12,15 @@
     siteNav?.classList.remove('is-open');
     navToggle?.setAttribute('aria-expanded', 'false');
     document.body.classList.remove('nav-open');
+    document.documentElement.classList.remove('nav-open');
   };
   const openNav = () => {
+    if (!siteNav) return;
+    siteNav.scrollTop = 0;
     siteNav?.classList.add('is-open');
     navToggle?.setAttribute('aria-expanded', 'true');
     document.body.classList.add('nav-open');
+    document.documentElement.classList.add('nav-open');
   };
   navToggle?.addEventListener('click', () => siteNav?.classList.contains('is-open') ? closeNav() : openNav());
   qsa('[data-nav-close]').forEach((btn) => btn.addEventListener('click', closeNav));
@@ -130,20 +134,26 @@
     if (typeof adminLogoutModal.close === 'function' && adminLogoutModal.open) adminLogoutModal.close();
     else adminLogoutModal.removeAttribute('open');
     document.body.classList.remove('modal-open');
+    document.documentElement.classList.remove('modal-open');
   };
   qs('[data-admin-logout-open]')?.addEventListener('click', (event) => {
     event.preventDefault();
     if (!adminLogoutModal) return;
-    const scrollPosition = { left: window.scrollX, top: window.scrollY };
-    if (typeof adminLogoutModal.showModal === 'function') adminLogoutModal.showModal();
-    else adminLogoutModal.setAttribute('open', '');
+    if (!adminLogoutModal.open) {
+      if (typeof adminLogoutModal.showModal === 'function') adminLogoutModal.showModal();
+      else adminLogoutModal.setAttribute('open', '');
+    }
     document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
     qs('[data-admin-logout-cancel]', adminLogoutModal)?.focus({ preventScroll: true });
-    window.scrollTo({ ...scrollPosition, behavior: 'instant' });
   });
   qs('[data-admin-logout-cancel]')?.addEventListener('click', closeAdminLogout);
   adminLogoutModal?.addEventListener('click', (event) => {
     if (event.target !== adminLogoutModal) return;
+    closeAdminLogout();
+  });
+  adminLogoutModal?.addEventListener('cancel', (event) => {
+    event.preventDefault();
     closeAdminLogout();
   });
 
